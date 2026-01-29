@@ -1,0 +1,5 @@
+.venv/
+__pycache__/
+*.pyc
+data/expenses.json
+data/last_chat.txt
