@@ -1,15 +1,13 @@
-import asyncio
 import os
 from pathlib import Path
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 from agent import ExpenseAgent
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-DAILY_BUDGET = float(os.getenv("DAILY_BUDGET", "50"))
 CHAT_FILE = Path(__file__).resolve().parent.parent / "data" / "last_chat.txt"
 
 agent = ExpenseAgent()
@@ -46,7 +44,7 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     amount = float(context.args[0])
     category = context.args[1]
     note = " ".join(context.args[2:])
-    expense = agent.add_expense(amount, category, note)
+    expense = agent.add_expense(amount, category, update.effective_user.id, note)
     await update.message.reply_text(
         f"Saved {expense.amount:.2f} to {expense.category}."
     )
@@ -55,28 +53,36 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def list_expenses(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_chat:
         _store_chat_id(update.effective_chat.id)
-    items = agent.list_expenses()
-    if not items:
-        await update.message.reply_text("No expenses recorded yet.")
-        return
-    lines = [
-        f"{item.amount:.2f} {item.category} ({item.note})" for item in items
-    ]
-    await update.message.reply_text("\n".join(lines))
+    await update.message.reply_text(
+        "Listing is not implemented yet. Send messages like \"Lunch 12.5\" to log."
+    )
 
 
-async def recommend(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def log_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_chat:
         _store_chat_id(update.effective_chat.id)
-    await update.message.reply_text(agent.spend_recommend(DAILY_BUDGET))
+    if not update.message or not update.message.text:
+        return
+    parsed = agent.parse_message(update.message.text)
+    if not parsed:
+        await update.message.reply_text(
+            "Send messages like \"Lunch 12.5\" to log expenses."
+        )
+        return
+    agent.add_expense(parsed.amount, parsed.category, update.effective_user.id)
+    await update.message.reply_text(
+        f"Logged {parsed.amount:.2f} to {parsed.category}."
+    )
 
 
 async def daily_summary(app: Application) -> None:
     chat_id = _load_chat_id()
     if not chat_id:
         return
-    text = agent.spend_recommend(DAILY_BUDGET)
-    await app.bot.send_message(chat_id=chat_id, text=f"Daily summary: {text}")
+    await app.bot.send_message(
+        chat_id=chat_id,
+        text="Daily reminder: log today's expenses by sending \"Lunch 12.5\".",
+    )
 
 
 def main() -> None:
@@ -86,7 +92,7 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("add", add))
     application.add_handler(CommandHandler("list", list_expenses))
-    application.add_handler(CommandHandler("recommend", recommend))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, log_message))
 
     scheduler = AsyncIOScheduler(timezone="UTC")
     scheduler.add_job(daily_summary, "cron", hour=20, args=[application])

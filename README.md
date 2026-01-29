@@ -1,6 +1,6 @@
 # Telegram Expense Agent
 
-Minimal Telegram bot for tracking expenses with local JSON storage.
+Minimal Telegram bot for tracking expenses with local JSONL storage.
 
 ## Setup
 
@@ -14,13 +14,13 @@ Create a bot token with BotFather and run:
 
 ```bash
 export TELEGRAM_BOT_TOKEN=your_token
-export DAILY_BUDGET=50
 python src/bot.py
 ```
 
 Commands:
 - `/add <amount> <category> [note]`
 - `/list`
-- `/recommend`
 
-Daily summary is sent at 20:00 UTC.
+You can also send a plain message like `午饭 12.5` to log an expense to `data/ledger.jsonl`.
+
+Daily reminder is sent at 20:00 UTC.
