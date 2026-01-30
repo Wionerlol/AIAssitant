@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from finance import (
+from tools.cashflow import (
     LedgerEntry,
     recent_daily_avg_7d,
     spend_recommend_cashflow,

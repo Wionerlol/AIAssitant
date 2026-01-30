@@ -31,7 +31,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_chat:
         _store_chat_id(update.effective_chat.id)
     await update.message.reply_text(
-        "Hi! Use /add <amount> <category> [note] to track expenses."
+        "Hi! Use /add <amount> <category> [note] or send 'Lunch 12.5' to log."
     )
 
 
@@ -64,14 +64,18 @@ async def log_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if not update.message or not update.message.text:
         return
     parsed = agent.parse_message(update.message.text)
-    if not parsed:
+    if parsed:
+        agent.add_expense(parsed.amount, parsed.category, update.effective_user.id)
         await update.message.reply_text(
-            "Send messages like \"Lunch 12.5\" to log expenses."
+            f"Logged {parsed.amount:.2f} to {parsed.category}."
         )
         return
-    agent.add_expense(parsed.amount, parsed.category, update.effective_user.id)
+    if agent.is_recommendation_message(update.message.text):
+        reply = agent.handle_recommendation(update.message.text)
+        await update.message.reply_text(reply)
+        return
     await update.message.reply_text(
-        f"Logged {parsed.amount:.2f} to {parsed.category}."
+        "Send 'Lunch 12.5' to log or ask for a budget recommendation."
     )
 
 

@@ -7,7 +7,7 @@ from typing import Dict, Iterable, List
 
 import json
 
-from agent import LEDGER_FILE
+from config import LEDGER_FILE
 
 
 @dataclass(frozen=True)
@@ -73,10 +73,10 @@ def recent_daily_avg_7d(entries: Iterable[LedgerEntry], today: date | None = Non
 def spend_recommend_cashflow(
     current_savings: float,
     next_payday: str,
-    ledger_file: Path = LEDGER_FILE,
     fixed_monthly_bills: float = 0,
     min_daily_floor: float = 20,
     safety_days: int = 7,
+    ledger_file: Path = LEDGER_FILE,
 ) -> Dict[str, object]:
     today = datetime.utcnow().date()
     payday = datetime.strptime(next_payday, "%Y-%m-%d").date()
