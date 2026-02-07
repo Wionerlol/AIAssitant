@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+data/ledger.jsonl
+data/last_chat.txt
+.env
